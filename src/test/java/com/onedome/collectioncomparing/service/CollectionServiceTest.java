@@ -1,6 +1,9 @@
 package com.onedome.collectioncomparing.service;
 
 import com.onedome.collectioncomparing.configuration.BaseIT;
+import com.onedome.collectioncomparing.controller.CollectionController;
+import com.onedome.collectioncomparing.controller.dto.CollectionDto;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,16 +21,27 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class CollectionServiceTest extends BaseIT {
 
     @Autowired
-    private CollectionService collectionService;
+    private CollectionController collectionController;
 
     @ParameterizedTest
     @MethodSource("inputs")
-    void createCollectionIfUnique(List<List<Long>> validInputs, List<Long> noValidInput) {
-        validInputs.forEach(input ->
-                collectionService.createCollectionIfUnique(input)
-        );
+    void createCollections_internalValidation(List<List<Long>> validInputs, List<Long> noValidInput) {
+        collectionController.createCollections(validInputs.stream().map(CollectionDto::new).toList());
 
-        assertThrows(IllegalStateException.class, () -> collectionService.createCollectionIfUnique(noValidInput));
+        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> collectionController.createCollections(List.of(new CollectionDto(noValidInput))));
+        System.out.println(illegalStateException.getMessage());
+    }
+
+    @Test
+    void createCollections_externalValidation() {
+        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> collectionController.createCollections(
+                        List.of(
+                                new CollectionDto(List.of(1L, 2L)),
+                                new CollectionDto(List.of(1L, 2L, 3L, 4L))
+                        )
+                )
+        );
+        System.out.println(illegalStateException.getMessage());
     }
 
     static List<Arguments> inputs() {

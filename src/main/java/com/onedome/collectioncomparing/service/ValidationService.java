@@ -4,6 +4,6 @@ import com.onedome.collectioncomparing.controller.dto.CollectionDto;
 
 import java.util.List;
 
-public interface CollectionService {
-    void saveCollection(List<CollectionDto> collections);
+public interface ValidationService {
+    void validate(List<CollectionDto> collections);
 }
