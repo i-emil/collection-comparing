@@ -1,0 +1,6 @@
+spring:
+  application.name: collection-comparing
+  datasource:
+    url: jdbc:postgresql://localhost:5432/icon_collection
+    username: postgres
+    password: postgres
