@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record Signature(
+public record HashData(
         List<Long> collection,
         byte[] hash,
         List<Long> bandHashes

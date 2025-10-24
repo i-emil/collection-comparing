@@ -2,10 +2,10 @@ package com.onedome.collectioncomparing.service.impl;
 
 import com.onedome.collectioncomparing.controller.dto.CollectionDto;
 import com.onedome.collectioncomparing.entity.CollectionEntity;
-import com.onedome.collectioncomparing.model.Signature;
+import com.onedome.collectioncomparing.model.HashData;
 import com.onedome.collectioncomparing.repository.CollectionLshBandRepository;
 import com.onedome.collectioncomparing.repository.CollectionRepository;
-import com.onedome.collectioncomparing.service.SignatureService;
+import com.onedome.collectioncomparing.service.HashService;
 import com.onedome.collectioncomparing.service.ValidationService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -13,13 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
@@ -32,7 +28,7 @@ public class ValidationServiceImpl implements ValidationService {
 
     private final CollectionLshBandRepository bandRepository;
     private final CollectionRepository collectionRepository;
-    private final SignatureService signatureService;
+    private final HashService hashService;
 
     @Override
     public void validate(List<CollectionDto> collections) {
@@ -41,15 +37,15 @@ public class ValidationServiceImpl implements ValidationService {
     }
 
     private void externalValidation(List<CollectionDto> collections) {
-        List<Signature> signatures = collections.stream()
+        List<HashData> hashData = collections.stream()
                 .map(CollectionDto::getIconIds)
-                .map(signatureService::createSignature)
+                .map(hashService::createHash)
                 .toList();
 
-        for (int i = 1; i < signatures.size(); i++) {
-            Signature current = signatures.get(i);
+        for (int i = 1; i < hashData.size(); i++) {
+            HashData current = hashData.get(i);
             for (int j = 0; j < i; j++) {
-                Signature prev = signatures.get(j);
+                HashData prev = hashData.get(j);
                 double coverage = computeCoverage(
                         current.collection(), current.hash(),
                         prev.collection(), prev.hash()
@@ -67,25 +63,25 @@ public class ValidationServiceImpl implements ValidationService {
 
     private void internalValidation(List<CollectionDto> collections) {
         collections.forEach(collection -> {
-            Signature signature = signatureService.createSignature(collection.getIconIds());
+            HashData hashData = hashService.createHash(collection.getIconIds());
 
-            Set<Long> candidateIds = bandRepository.findAllByBandHashIn(signature.bandHashes()).stream().
+            Set<Long> candidateIds = bandRepository.findAllByBandHashIn(hashData.bandHashes()).stream().
                     map(x -> x.getId().getCollectionId()).
                     collect(toSet());
 
             if (isNotEmpty(candidateIds)) {
-                validateSimilarity(collection.getIconIds(), new ArrayList<>(candidateIds), signature.hash());
+                validateSimilarity(collection.getIconIds(), new ArrayList<>(candidateIds), hashData.hash());
             }
         });
     }
 
-    private void validateSimilarity(List<Long> iconIds, List<Long> candidateIds, byte[] currentSignature) {
+    private void validateSimilarity(List<Long> iconIds, List<Long> candidateIds, byte[] currentHash) {
         for (Long cid : candidateIds) {
             Optional<CollectionEntity> maybe = collectionRepository.findById(cid);
             if (maybe.isEmpty()) continue;
 
             CollectionEntity oldCollection = maybe.get();
-            double coverage = computeCoverage(iconIds, currentSignature, parseIconIds(oldCollection.getIconIds()), oldCollection.getMinhash());
+            double coverage = computeCoverage(iconIds, currentHash, parseIconIds(oldCollection.getIconIds()), oldCollection.getMinhash());
 
             if (coverage >= COVERAGE_THRESHOLD) {
                 throw new IllegalStateException(
@@ -98,17 +94,17 @@ public class ValidationServiceImpl implements ValidationService {
 
     private double computeCoverage(
             List<Long> currentIds,
-            byte[] currentSignature,
+            byte[] currentCollectionHash,
             List<Long> oldIds,
-            byte[] oldSignature
+            byte[] oldCollectionHash
     ) {
         var iconsSize = currentIds.size();
         double coverage;
-        if (Arrays.equals(currentSignature, oldSignature)) {
+        if (Arrays.equals(currentCollectionHash, oldCollectionHash)) {
             coverage = 1.0;
         } else {
             if (iconsSize > 100) {
-                coverage = signatureService.compareSignatures(oldSignature, currentSignature);
+                coverage = hashService.compareHashes(oldCollectionHash, currentCollectionHash);
             } else {
                 coverage = compareByElements(oldIds, currentIds);
             }

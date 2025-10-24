@@ -5,8 +5,8 @@ import com.dynatrace.hash4j.similarity.ElementHashProvider;
 import com.dynatrace.hash4j.similarity.SimilarityHashPolicy;
 import com.dynatrace.hash4j.similarity.SimilarityHasher;
 import com.dynatrace.hash4j.similarity.SimilarityHashing;
-import com.onedome.collectioncomparing.model.Signature;
-import com.onedome.collectioncomparing.service.SignatureService;
+import com.onedome.collectioncomparing.model.HashData;
+import com.onedome.collectioncomparing.service.HashService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.function.ToLongFunction;
 
 @Service
-public class SignatureServiceImpl implements SignatureService {
+public class HashServiceImpl implements HashService {
 
     private static final int NUM_COMPONENTS = 256;
     private static final int BAND_COUNT = 32;
@@ -25,22 +25,22 @@ public class SignatureServiceImpl implements SignatureService {
     private static final ToLongFunction<Long> ELEM_HASH = v -> Hashing.komihash5_0().hashLongToLong(v);
 
     @Override
-    public Signature createSignature(List<Long> dataIds) {
-        byte[] signature = HASHER.compute(ElementHashProvider.ofCollection(dataIds, ELEM_HASH));
-        List<Long> bandHashes = computeBandHashes(signature);
+    public HashData createHash(List<Long> dataIds) {
+        byte[] hash = HASHER.compute(ElementHashProvider.ofCollection(dataIds, ELEM_HASH));
+        List<Long> bandHashes = computeBandHashes(hash);
 
-        return Signature.builder().hash(signature).bandHashes(bandHashes).collection(dataIds).build();
+        return HashData.builder().hash(hash).bandHashes(bandHashes).collection(dataIds).build();
     }
 
     @Override
-    public double compareSignatures(byte[] oldCollectionSignature, byte[] currentSignature) {
-        double fraction = POLICY.getFractionOfEqualComponents(currentSignature, oldCollectionSignature);
+    public double compareHashes(byte[] hashA, byte[] hashB) {
+        double fraction = POLICY.getFractionOfEqualComponents(hashB, hashA);
         return (fraction - Math.pow(2.0, -BITS_PER_COMPONENT))
                 / (1.0 - Math.pow(2.0, -BITS_PER_COMPONENT));
     }
 
-    private List<Long> computeBandHashes(byte[] signature) {
-        int totalBytes = signature.length;
+    private List<Long> computeBandHashes(byte[] hash) {
+        int totalBytes = hash.length;
         int base = totalBytes / BAND_COUNT;
         int rem = totalBytes % BAND_COUNT;
 
@@ -48,7 +48,7 @@ public class SignatureServiceImpl implements SignatureService {
         int offset = 0;
         for (int b = 0; b < BAND_COUNT; b++) {
             int len = base + (b < rem ? 1 : 0);
-            long h = Hashing.komihash5_0().hashBytesToLong(signature, offset, len);
+            long h = Hashing.komihash5_0().hashBytesToLong(hash, offset, len);
             result.add(h);
             offset += len;
         }
