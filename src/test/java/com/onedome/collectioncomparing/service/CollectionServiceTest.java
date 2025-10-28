@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.LongStream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
@@ -28,20 +26,18 @@ public class CollectionServiceTest extends BaseIT {
     void createCollections_internalValidation(List<List<Long>> validInputs, List<Long> noValidInput) {
         collectionController.createCollections(validInputs.stream().map(CollectionDto::new).toList());
 
-        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> collectionController.createCollections(List.of(new CollectionDto(noValidInput))));
-        System.out.println(illegalStateException.getMessage());
+        assertThrows(IllegalStateException.class, () -> collectionController.createCollections(List.of(new CollectionDto(noValidInput))));
     }
 
     @Test
     void createCollections_externalValidation() {
-        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> collectionController.createCollections(
+        assertThrows(IllegalStateException.class, () -> collectionController.createCollections(
                         List.of(
                                 new CollectionDto(List.of(1L, 2L)),
                                 new CollectionDto(List.of(1L, 2L, 3L, 4L))
                         )
                 )
         );
-        System.out.println(illegalStateException.getMessage());
     }
 
     static List<Arguments> inputs() {
