@@ -46,9 +46,7 @@ public class ValidationServiceImpl implements ValidationService {
             HashData current = hashData.get(i);
             for (int j = 0; j < i; j++) {
                 HashData prev = hashData.get(j);
-                double coverage = computeCoverage(
-                        current.collection(), current.hash(), prev.collection(), prev.hash()
-                );
+                double coverage = computeCoverage(current.collection(), current.hash(), prev.collection(), prev.hash());
                 if (coverage > COVERAGE_THRESHOLD) {
                     throw new IllegalStateException(
                             "Similar collections in request (>%.2f%% overlap), coverage %.2f%% between collections %d and %d"
