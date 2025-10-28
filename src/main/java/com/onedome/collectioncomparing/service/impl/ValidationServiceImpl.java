@@ -32,11 +32,11 @@ public class ValidationServiceImpl implements ValidationService {
 
     @Override
     public void validate(List<CollectionDto> collections) {
-        externalValidation(collections);
-        internalValidation(collections);
+        collectionInnerValidation(collections);
+        collectionSystemValidation(collections);
     }
 
-    private void externalValidation(List<CollectionDto> collections) {
+    private void collectionInnerValidation(List<CollectionDto> collections) {
         List<HashData> hashData = collections.stream()
                 .map(CollectionDto::getIconIds)
                 .map(hashService::createHash)
@@ -60,7 +60,7 @@ public class ValidationServiceImpl implements ValidationService {
 
     }
 
-    private void internalValidation(List<CollectionDto> collections) {
+    private void collectionSystemValidation(List<CollectionDto> collections) {
         collections.forEach(collection -> {
             HashData hashData = hashService.createHash(collection.getIconIds());
 
