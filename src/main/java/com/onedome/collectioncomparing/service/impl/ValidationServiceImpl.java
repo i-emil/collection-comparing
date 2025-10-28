@@ -47,8 +47,7 @@ public class ValidationServiceImpl implements ValidationService {
             for (int j = 0; j < i; j++) {
                 HashData prev = hashData.get(j);
                 double coverage = computeCoverage(
-                        current.collection(), current.hash(),
-                        prev.collection(), prev.hash()
+                        current.collection(), current.hash(), prev.collection(), prev.hash()
                 );
                 if (coverage > COVERAGE_THRESHOLD) {
                     throw new IllegalStateException(
